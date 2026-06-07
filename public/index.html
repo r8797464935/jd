@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JMail</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/styles.css" />
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✉️</text></svg>"
+  />
+</head>
+<body>
+  <!-- ===================== AUTH SCREEN ===================== -->
+  <div id="auth" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-j">J</span><span class="logo-mail">Mail</span>
+      </div>
+
+      <!-- Login -->
+      <form id="login-form" class="auth-form">
+        <h1>Sign in</h1>
+        <p class="muted">to continue to JMail</p>
+        <input id="login-username" type="text" placeholder="Username or email" autocomplete="username" required />
+        <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" required />
+        <div class="auth-error" id="login-error"></div>
+        <div class="auth-actions">
+          <button type="button" class="link-btn" data-show="register">Create account</button>
+          <button type="submit" class="primary-btn">Sign in</button>
+        </div>
+      </form>
+
+      <!-- Register -->
+      <form id="register-form" class="auth-form hidden">
+        <h1>Create your JMail Account</h1>
+        <p class="muted">Pick a username — your address will be username@jmail.local</p>
+        <input id="reg-name" type="text" placeholder="Display name (e.g. Ada Lovelace)" autocomplete="name" />
+        <div class="username-row">
+          <input id="reg-username" type="text" placeholder="username" autocomplete="username" required />
+          <span class="domain-suffix">@jmail.local</span>
+        </div>
+        <input id="reg-password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" required />
+        <div class="auth-error" id="register-error"></div>
+        <div class="auth-actions">
+          <button type="button" class="link-btn" data-show="login">Sign in instead</button>
+          <button type="submit" class="primary-btn">Create account</button>
+        </div>
+      </form>
+    </div>
+    <div class="auth-foot">JMail — a self-contained Gmail-style demo. Accounts live only in this app.</div>
+  </div>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="menu-toggle" class="icon-btn" title="Menu">&#9776;</button>
+        <div class="brand"><span class="logo-j">J</span><span class="logo-mail">Mail</span></div>
+      </div>
+      <div class="search">
+        <span class="search-icon">&#128269;</span>
+        <input id="search-input" type="text" placeholder="Search mail" />
+      </div>
+      <div class="topbar-right">
+        <span id="user-email" class="user-email"></span>
+        <button id="avatar-btn" class="avatar" title="Account"></button>
+        <div id="account-menu" class="account-menu hidden">
+          <div class="account-menu-name" id="menu-name"></div>
+          <div class="account-menu-email" id="menu-email"></div>
+          <button id="logout-btn" class="primary-btn block">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar" id="sidebar">
+        <button id="compose-btn" class="compose-btn">
+          <span class="plus">&#9998;</span> Compose
+        </button>
+        <nav class="folders">
+          <a class="folder active" data-folder="inbox">
+            <span class="f-icon">&#128229;</span><span class="f-name">Inbox</span>
+            <span class="f-count" id="count-inbox"></span>
+          </a>
+          <a class="folder" data-folder="starred">
+            <span class="f-icon">&#9733;</span><span class="f-name">Starred</span>
+          </a>
+          <a class="folder" data-folder="sent">
+            <span class="f-icon">&#10148;</span><span class="f-name">Sent</span>
+          </a>
+          <a class="folder" data-folder="drafts">
+            <span class="f-icon">&#128196;</span><span class="f-name">Drafts</span>
+          </a>
+          <a class="folder" data-folder="trash">
+            <span class="f-icon">&#128465;</span><span class="f-name">Trash</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <div class="list-toolbar">
+          <h2 id="folder-title">Inbox</h2>
+          <button id="refresh-btn" class="icon-btn" title="Refresh">&#8635;</button>
+        </div>
+        <ul id="mail-list" class="mail-list"></ul>
+        <div id="empty-state" class="empty-state hidden"></div>
+
+        <!-- Reading pane -->
+        <section id="reader" class="reader hidden">
+          <div class="reader-toolbar">
+            <button id="reader-back" class="icon-btn" title="Back">&#8592;</button>
+            <button id="reader-trash" class="icon-btn" title="Delete">&#128465;</button>
+            <button id="reader-star" class="icon-btn" title="Star">&#9733;</button>
+            <button id="reader-reply" class="text-btn" title="Reply">Reply</button>
+          </div>
+          <div class="reader-body">
+            <h1 id="reader-subject"></h1>
+            <div class="reader-meta">
+              <div class="reader-avatar" id="reader-avatar"></div>
+              <div class="reader-from">
+                <div><strong id="reader-from-name"></strong> <span class="muted" id="reader-from-email"></span></div>
+                <div class="muted" id="reader-to"></div>
+              </div>
+              <div class="reader-date muted" id="reader-date"></div>
+            </div>
+            <pre id="reader-text" class="reader-text"></pre>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Compose window -->
+    <div id="compose" class="compose hidden">
+      <div class="compose-head">
+        <span>New Message</span>
+        <button id="compose-close" class="icon-btn light" title="Close">&times;</button>
+      </div>
+      <form id="compose-form" class="compose-form">
+        <input id="compose-to" type="text" placeholder="To (username or username@jmail.local)" />
+        <input id="compose-subject" type="text" placeholder="Subject" />
+        <textarea id="compose-body" placeholder="Write your message…"></textarea>
+        <div class="compose-error" id="compose-error"></div>
+        <div class="compose-foot">
+          <button type="submit" class="primary-btn">Send</button>
+          <button type="button" id="save-draft" class="text-btn">Save draft</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

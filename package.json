@@ -1,0 +1,17 @@
+{
+  "name": "jmail",
+  "version": "1.0.0",
+  "description": "A Gmail-like email application: register accounts, send and receive email, with a familiar webmail UI.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2"
+  }
+}
