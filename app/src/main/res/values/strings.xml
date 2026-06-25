@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">Softphone</string>
+
+    <!-- Notifications -->
+    <string name="channel_service_name">SIP service</string>
+    <string name="channel_service_desc">Keeps you registered to receive calls</string>
+    <string name="channel_calls_name">Calls</string>
+    <string name="channel_calls_desc">Incoming and ongoing calls</string>
+    <string name="service_registered">Registered · ready for calls</string>
+    <string name="service_unregistered">Not registered</string>
+
+    <!-- Dialer -->
+    <string name="dialer_title">Keypad</string>
+    <string name="dialer_call">Call</string>
+    <string name="dialer_hint">Enter number or SIP address</string>
+
+    <!-- Settings -->
+    <string name="settings_title">SIP account</string>
+    <string name="settings_username">Username</string>
+    <string name="settings_password">Password</string>
+    <string name="settings_domain">Domain / proxy</string>
+    <string name="settings_display_name">Display name (optional)</string>
+    <string name="settings_transport">Transport</string>
+    <string name="settings_save">Save &amp; register</string>
+    <string name="settings_clear">Remove account</string>
+
+    <!-- In-call -->
+    <string name="incall_mute">Mute</string>
+    <string name="incall_speaker">Speaker</string>
+    <string name="incall_keypad">Keypad</string>
+    <string name="incall_hangup">Hang up</string>
+    <string name="incall_answer">Answer</string>
+    <string name="incall_decline">Decline</string>
+</resources>
