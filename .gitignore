@@ -1,0 +1,21 @@
+# Gradle / Android build artifacts
+.gradle/
+build/
+captures/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.DS_Store
+
+# Keystores & secrets (never commit signing material or google-services.json)
+*.jks
+*.keystore
+app/google-services.json
+
+# Generated
+*.apk
+*.aab
+*.ap_
+*.dex
