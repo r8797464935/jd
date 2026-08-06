@@ -68,3 +68,49 @@ class FacebookEventClient:
     @staticmethod
     def get_event_url(event_id):
         return f"https://www.facebook.com/events/{event_id}/"
+
+    def invite_users(self, event_id, user_ids, user_access_token):
+        """Invite Facebook users to an event using Facebook's own invite system.
+
+        Calls ``POST /{event_id}/invited/{user_id}`` for each user ID, which is
+        the same edge the Facebook UI uses when you click "Invite Friends".
+
+        Requirements / caveats (Graph API v19, 2026):
+        - ``user_access_token`` must be a USER access token (not a Page token)
+          belonging to a host/admin of the event, granted the ``user_events``
+          permission. Facebook locked this permission down in its 2018
+          platform changes; apps created since then are effectively unable to
+          get it approved through App Review, so this will commonly fail with
+          an OAuth permission error (code 200 / "Invalid Scope") unless your
+          app is a legacy app that still holds the permission.
+        - The invited person generally must be a Facebook friend of the token
+          holder.
+        - This edge is documented for user-created events. Page-owned events
+          (the only kind ``create_event`` above can make, since personal-
+          profile event creation was removed from the API) are public/
+          discovery-based and may reject per-user invites outright.
+        - Invites are by Facebook user ID, not email address — Facebook's
+          invite system has no concept of inviting an arbitrary email address.
+
+        Returns a dict of {user_id: {"success": bool, "error": ... optional}}.
+        """
+        if not user_access_token:
+            raise ValueError("user_access_token is required")
+        if not user_ids:
+            raise ValueError("user_ids must be a non-empty list of Facebook user IDs")
+
+        results = {}
+        for user_id in user_ids:
+            url = f"{GRAPH_API_BASE}/{event_id}/invited/{user_id}"
+            response = self._session.post(url, data={"access_token": user_access_token}, timeout=30)
+            try:
+                data = response.json()
+            except ValueError:
+                results[user_id] = {"success": False, "error": response.text}
+                continue
+
+            if response.status_code >= 400 or "error" in data:
+                results[user_id] = {"success": False, "error": data.get("error", data)}
+            else:
+                results[user_id] = {"success": bool(data.get("success", True))}
+        return results

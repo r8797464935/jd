@@ -1,4 +1,6 @@
-"""Command-line entry point: create a Facebook Page event, then email invites."""
+"""Command-line entry point: create a Facebook Page event, then invite guests
+using Facebook's own invite system (POST /{event_id}/invited/{user_id}).
+"""
 
 import argparse
 import os
@@ -6,12 +8,11 @@ import sys
 from datetime import datetime
 
 from .facebook import FacebookEventClient, FacebookAPIError
-from .email_invite import EmailInviter
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Create a Facebook Page event and email invitations to a recipient list."
+        description="Create a Facebook Page event and invite guests via Facebook's own invite system."
     )
     parser.add_argument("--name", required=True, help="Event name")
     parser.add_argument("--description", default="", help="Event description")
@@ -22,24 +23,26 @@ def parse_args(argv=None):
     parser.add_argument("--timezone", default=None, help="IANA timezone name, e.g. America/Los_Angeles")
     parser.add_argument("--online", action="store_true", help="Mark event as online")
     parser.add_argument(
-        "--recipients",
+        "--invite-uids",
         required=True,
-        help="Comma-separated email addresses, or a path to a file with one email per line",
+        help=(
+            "Comma-separated Facebook user IDs to invite, or a path to a file with one "
+            "user ID per line. Facebook's invite system works on user IDs, not emails."
+        ),
     )
-    parser.add_argument("--subject", default=None, help="Email subject (defaults to the event name)")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Build the event/email payloads but skip the Facebook API call and the email send",
+        help="Build the event/invite payloads but skip the Facebook API calls",
     )
     return parser.parse_args(argv)
 
 
-def load_recipients(value):
+def load_ids(value):
     if os.path.isfile(value):
         with open(value) as f:
             return [line.strip() for line in f if line.strip()]
-    return [addr.strip() for addr in value.split(",") if addr.strip()]
+    return [uid.strip() for uid in value.split(",") if uid.strip()]
 
 
 def main(argv=None):
@@ -47,19 +50,24 @@ def main(argv=None):
 
     start = datetime.fromisoformat(args.start)
     end = datetime.fromisoformat(args.end)
-    recipients = load_recipients(args.recipients)
-    subject = args.subject or f"You're invited: {args.name}"
+    invite_uids = load_ids(args.invite_uids)
 
     if args.dry_run:
-        print("[dry-run] Skipping Facebook event creation and email send.")
+        print("[dry-run] Skipping Facebook event creation and invite calls.")
         print(f"Would create event '{args.name}' from {start} to {end}")
-        print(f"Would email {len(recipients)} recipient(s): {', '.join(recipients)}")
+        print(f"Would invite {len(invite_uids)} Facebook user(s): {', '.join(invite_uids)}")
         return
 
     page_id = os.environ.get("FB_PAGE_ID")
     page_token = os.environ.get("FB_PAGE_ACCESS_TOKEN")
+    user_token = os.environ.get("FB_USER_ACCESS_TOKEN")
     if not (page_id and page_token):
         sys.exit("FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN must be set in the environment.")
+    if not user_token:
+        sys.exit(
+            "FB_USER_ACCESS_TOKEN must be set in the environment to send invites "
+            "(a user token with the user_events permission)."
+        )
 
     fb_client = FacebookEventClient(page_id, page_token)
     try:
@@ -80,29 +88,19 @@ def main(argv=None):
     event_url = fb_client.get_event_url(event_id)
     print(f"Created Facebook event {event_id}: {event_url}")
 
-    smtp_host = os.environ.get("SMTP_HOST")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_password = os.environ.get("SMTP_PASSWORD")
-    sender_name = os.environ.get("SENDER_NAME")
+    try:
+        invite_results = fb_client.invite_users(event_id, invite_uids, user_token)
+    except ValueError as exc:
+        sys.exit(str(exc))
 
-    if not (smtp_host and smtp_user and smtp_password):
-        sys.exit("SMTP_HOST, SMTP_USER, and SMTP_PASSWORD must be set in the environment.")
+    succeeded = [uid for uid, r in invite_results.items() if r.get("success")]
+    failed = {uid: r.get("error") for uid, r in invite_results.items() if not r.get("success")}
 
-    inviter = EmailInviter(smtp_host, smtp_port, smtp_user, smtp_password)
-    results = inviter.send_invite(
-        recipients=recipients,
-        subject=subject,
-        event_name=args.name,
-        description=args.description,
-        location=args.location,
-        start=start,
-        end=end,
-        event_url=event_url,
-        sender=smtp_user,
-        sender_name=sender_name,
-    )
-    print(f"Sent invites to {len(results)} recipient(s).")
+    print(f"Invited {len(succeeded)}/{len(invite_uids)} user(s).")
+    if failed:
+        print("Failed invites:")
+        for uid, error in failed.items():
+            print(f"  {uid}: {error}")
 
 
 if __name__ == "__main__":
